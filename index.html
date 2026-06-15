@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hinglish Voice-to-Invoice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+        
+        .mic-button-pulse {
+            animation: pulse-ring 2s infinite;
+        }
+        
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spinner-animate {
+            animation: spin-slow 1s linear infinite;
+        }
+        
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .invoice-animate {
+            animation: slide-up 0.5s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2">
+                Hinglish Voice-to-Invoice
+            </h1>
+            <p class="text-lg text-slate-600">
+                B2B Ordering via Mixed-Language Speech Transcription
+            </p>
+
+        </div>
+        
+        <!-- Main Grid: Recorder + Invoice -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Left Column: Recording Interface -->
+            <div class="flex flex-col gap-6">
+                
+                <!-- Recording Card -->
+                <div class="bg-white rounded-2xl shadow-lg p-8">
+                    <h2 class="text-2xl font-semibold text-slate-900 mb-6">
+                        Voice Recording
+                    </h2>
+                    
+                    <!-- Microphone Button -->
+                    <div class="flex justify-center mb-8">
+                        <button
+                            id="micButton"
+                            class="relative w-32 h-32 rounded-full bg-blue-500 hover:bg-blue-600 transition-all duration-200 flex items-center justify-center cursor-pointer shadow-xl mic-button-pulse"
+                            aria-label="Start recording"
+                        >
+                            <span class="text-6xl">🎤</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Status Text -->
+                    <div class="text-center">
+                        <p id="recordingStatus" class="text-lg font-medium text-slate-700 mb-2">
+                            Click to Start Recording
+                        </p>
+                        <p id="recordingTimer" class="text-sm text-slate-500">
+                            Recording time: <span id="timerValue">0:00</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Recording Indicator -->
+                    <div id="recordingIndicator" class="hidden mt-6 flex items-center justify-center gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span class="text-red-700 font-medium">Recording...</span>
+                    </div>
+                </div>
+                
+                <!-- Transcript Display -->
+                <div id="transcriptCard" class="hidden bg-white rounded-2xl shadow-lg p-8">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">
+                         Extracted Transcript
+                    </h3>
+                    <div id="transcriptText" class="bg-slate-50 rounded-lg p-4 text-slate-700 italic border-l-4 border-blue-500">
+                    </div>
+                </div>
+                
+                <!-- Error Display -->
+                <div id="errorCard" class="hidden bg-red-50 rounded-2xl shadow-lg p-8 border border-red-200">
+                    <h3 class="text-lg font-semibold text-red-900 mb-4">
+                         Error Occurred
+                    </h3>
+                    <p id="errorText" class="text-red-700"></p>
+                </div>
+                
+            </div>
+            
+            <!-- Right Column: Invoice Display -->
+            <div class="flex flex-col gap-6">
+                
+                <!-- Loading Spinner (Hidden by default) -->
+                <div id="loadingCard" class="hidden bg-white rounded-2xl shadow-lg p-8 flex items-center justify-center min-h-96">
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-4">
+                            <svg class="spinner-animate text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-slate-600 font-medium">Processing your order...</p>
+                        <p class="text-sm text-slate-500 mt-2">Transcribing audio & parsing with AI</p>
+                    </div>
+                </div>
+                
+                <!-- Invoice Card -->
+                <div id="invoiceCard" class="hidden bg-white rounded-2xl shadow-lg p-8 invoice-animate">
+                    
+                    <!-- Invoice Header -->
+                    <div class="border-b-2 border-slate-200 pb-6 mb-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900">
+                                     Order Invoice
+                                </h2>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-500">Order ID</p>
+                                <p id="invoiceOrderId" class="text-lg font-mono text-blue-600"></p>
+                            </div>
+                        </div>
+                        <p id="invoiceTimestamp" class="text-sm text-slate-600"></p>
+                    </div>
+                    
+                    <!-- Items Table -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-slate-900 mb-4">
+                             Ordered Items
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200">
+                                        <th class="text-left py-3 px-4 font-semibold text-slate-700">Product</th>
+                                        <th class="text-center py-3 px-4 font-semibold text-slate-700">Qty</th>
+                                        <th class="text-right py-3 px-4 font-semibold text-slate-700">Unit Price</th>
+                                        <th class="text-right py-3 px-4 font-semibold text-slate-700">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invoiceItems">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Totals Section -->
+                    <div class="bg-slate-50 rounded-lg p-6 space-y-3 border border-slate-200">
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-700">Subtotal</span>
+                            <span id="invoiceSubtotal" class="font-semibold text-slate-900">₹0.00</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-700">GST (18%)</span>
+                            <span id="invoiceGst" class="font-semibold text-slate-900">₹0.00</span>
+                        </div>
+                        
+                        <div class="border-t border-slate-300 pt-3 flex justify-between items-center text-lg">
+                            <span class="font-bold text-slate-900">Total Amount</span>
+                            <span id="invoiceTotal" class="font-bold text-2xl text-green-600">₹0.00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="mt-6 pt-6 border-t border-slate-200 text-center">
+                        <p class="text-xs text-slate-500 mb-4">
+                            Order confirmed and saved to database
+                        </p>
+                        <div class="flex gap-4 justify-center">
+                            <button
+                                onclick="downloadInvoice()"
+                                class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg transition-all duration-200"
+                            >
+                                Download Invoice
+                            </button>
+                            <button
+                                onclick="resetForm()"
+                                class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-all duration-200"
+                            >
+                                Start New Order
+                            </button>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-8 border border-blue-100 text-center min-h-96 flex flex-col items-center justify-center">
+                    <div class="text-6xl mb-4">🗣️</div>
+                    <h3 class="text-xl font-semibold text-slate-900 mb-2">
+                        Ready to Order?
+                    </h3>
+                    <p class="text-slate-600 max-w-xs">
+                        Click the microphone button on the left to record your order in Hinglish (English-Hindi mix)
+                    </p>
+                    <div class="mt-6 text-sm text-slate-500 space-y-2">
+                        <p> "Dus pack maggi aur ek atta"</p>
+                        <p> "Do butter, char namak"</p>
+                        <p> "Paanch maggi packets, ek packet atta"</p>
+                    </div>
+                </div>
+                
+            </div>
+            
+        </div>
+
+        
+    </div>
+    
+    <script>
+        
+        // Configuration & State Management
+        
+        
+        const API_BASE_URL = "http://localhost:8000";
+        const AUDIO_MIME_TYPE = "audio/webm";
+        
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingStartTime = null;
+        let timerInterval = null;
+        let stream = null;
+        
+        
+        // DOM Elements
+        
+        
+        const micButton = document.getElementById("micButton");
+        const recordingStatus = document.getElementById("recordingStatus");
+        const recordingTimer = document.getElementById("recordingTimer");
+        const timerValue = document.getElementById("timerValue");
+        const recordingIndicator = document.getElementById("recordingIndicator");
+        const loadingCard = document.getElementById("loadingCard");
+        const invoiceCard = document.getElementById("invoiceCard");
+        const emptyState = document.getElementById("emptyState");
+        const transcriptCard = document.getElementById("transcriptCard");
+        const transcriptText = document.getElementById("transcriptText");
+        const errorCard = document.getElementById("errorCard");
+        const errorText = document.getElementById("errorText");
+        
+        
+        // Utility Functions
+        
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, "0")}`;
+        }
+        
+        function formatCurrency(amount) {
+            return `₹${amount.toFixed(2)}`;
+        }
+        
+        function hideAllCards() {
+            loadingCard.classList.add("hidden");
+            invoiceCard.classList.add("hidden");
+            emptyState.classList.add("hidden");
+            transcriptCard.classList.add("hidden");
+            errorCard.classList.add("hidden");
+        }
+        
+        function showError(message) {
+            hideAllCards();
+            errorCard.classList.remove("hidden");
+            errorText.textContent = message;
+        }
+        
+        
+        // Recording Functions
+        
+        
+        async function startRecording() {
+            try {
+                // Request microphone access
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                    }
+                });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: AUDIO_MIME_TYPE
+                });
+                
+                audioChunks = [];
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                // Update UI
+                recordingStatus.textContent = "🎙️ Recording... Click to Stop";
+                recordingIndicator.classList.remove("hidden");
+                micButton.classList.add("bg-red-500", "hover:bg-red-600");
+                micButton.classList.remove("bg-blue-500", "hover:bg-blue-600");
+                
+                // Start timer
+                startTimer();
+                
+                // Handle audio data
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstart = () => {
+                    console.log(" Recording started");
+                };
+                
+                mediaRecorder.onstop = () => {
+                    console.log(" Recording stopped");
+                };
+                
+                mediaRecorder.start();
+                
+            } catch (error) {
+                showError(`Microphone access denied: ${error.message}`);
+                console.error("Recording error:", error);
+            }
+        }
+        
+        function stopRecording() {
+            if (!mediaRecorder || !isRecording) return;
+            
+            mediaRecorder.stop();
+            isRecording = false;
+            
+            // Stop timer
+            clearInterval(timerInterval);
+            
+            // Stop all tracks
+            stream.getTracks().forEach(track => track.stop());
+            
+            // Update UI
+            recordingStatus.textContent = "⏸ Processing...";
+            recordingIndicator.classList.add("hidden");
+            recordingTimer.classList.add("hidden");
+            micButton.classList.add("bg-blue-500", "hover:bg-blue-600");
+            micButton.classList.remove("bg-red-500", "hover:bg-red-600");
+            
+            // Process recording after a brief delay
+            setTimeout(() => {
+                processRecording();
+            }, 500);
+        }
+        
+        function startTimer() {
+            timerValue.textContent = "0:00";
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                timerValue.textContent = formatTime(elapsed);
+            }, 100);
+        }
+        
+        
+        // Processing Functions
+        
+        
+        async function processRecording() {
+            if (audioChunks.length === 0) {
+                showError("No audio recorded. Please try again.");
+                resetForm();
+                return;
+            }
+            
+            try {
+                // Create audio blob
+                const audioBlob = new Blob(audioChunks, { type: AUDIO_MIME_TYPE });
+                
+                console.log(` Audio blob created: ${audioBlob.size} bytes`);
+                
+                // Show loading state
+                hideAllCards();
+                loadingCard.classList.remove("hidden");
+                
+                // Create FormData
+                const formData = new FormData();
+                formData.append("audio_file", audioBlob, "recording.webm");
+                formData.append("customer_name", "Web User");
+                
+                // Send to API
+                console.log(" Sending audio to API...");
+                const response = await fetch(`${API_BASE_URL}/api/order/process-voice`, {
+                    method: "POST",
+                    body: formData,
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail?.message || "API request failed");
+                }
+                
+                const result = await response.json();
+                
+                console.log(" API Response:", result);
+                
+                // Handle response
+                if (result.status === "success" && result.items_ordered && result.items_ordered.length > 0) {
+                    displayInvoice(result);
+                } else if (result.status === "warning") {
+                    showError(result.message || "No items recognized. Please try again with clearer speech.");
+                    recordingStatus.textContent = " No items recognized";
+                } else {
+                    throw new Error("Unexpected API response");
+                }
+                
+            } catch (error) {
+                console.error(" Error:", error);
+                showError(`Processing failed: ${error.message}`);
+                recordingStatus.textContent = " Error - Click to retry";
+            }
+        }
+        
+        
+        // Invoice Display
+        
+        
+        function displayInvoice(data) {
+            hideAllCards();
+            
+            // Display transcript
+            transcriptCard.classList.remove("hidden");
+            transcriptText.textContent = data.transcript_extracted;
+            
+            // Populate invoice
+            document.getElementById("invoiceOrderId").textContent = data.order_id;
+            document.getElementById("invoiceTimestamp").textContent = new Date().toLocaleString();
+            
+            // Build items table
+            const itemsHtml = data.items_ordered.map(item => `
+                <tr class="border-b border-slate-200 hover:bg-slate-50">
+                    <td class="py-3 px-4 text-slate-900">${item.item_name}</td>
+                    <td class="text-center py-3 px-4 text-slate-700">${item.quantity}</td>
+                    <td class="text-right py-3 px-4 text-slate-700">${formatCurrency(item.unit_price_inr)}</td>
+                    <td class="text-right py-3 px-4 font-semibold text-slate-900">${formatCurrency(item.line_total_inr)}</td>
+                </tr>
+            `).join("");
+            
+            document.getElementById("invoiceItems").innerHTML = itemsHtml;
+            
+            // Update totals
+            document.getElementById("invoiceSubtotal").textContent = formatCurrency(data.subtotal_inr);
+            document.getElementById("invoiceGst").textContent = formatCurrency(data.gst_inr);
+            document.getElementById("invoiceTotal").textContent = formatCurrency(data.total_amount_inr);
+            
+            // Show invoice
+            invoiceCard.classList.remove("hidden");
+            
+            // Update button
+            recordingStatus.textContent = " Order Complete!";
+            recordingTimer.classList.remove("hidden");
+            recordingTimer.innerHTML = `<span style="color: #10b981;">Order ID: ${data.order_id.substring(0, 8)}...</span>`;
+        }
+        
+        
+        // Invoice Download
+        
+        function downloadInvoice() {
+            try {
+                // Get invoice data from DOM
+                const orderId = document.getElementById("invoiceOrderId").textContent;
+                const timestamp = document.getElementById("invoiceTimestamp").textContent;
+                const subtotal = document.getElementById("invoiceSubtotal").textContent;
+                const gst = document.getElementById("invoiceGst").textContent;
+                const total = document.getElementById("invoiceTotal").textContent;
+                
+                // Get items from table
+                const itemRows = document.querySelectorAll("#invoiceItems tr");
+                let itemsTable = "Product Name                 | Quantity | Unit Price  | Total Price\n";
+                itemsTable += "-".repeat(70) + "\n";
+                
+                itemRows.forEach(row => {
+                    const cells = row.querySelectorAll("td");
+                    const product = cells[0].textContent.trim();
+                    const qty = cells[1].textContent.trim();
+                    const unitPrice = cells[2].textContent.trim();
+                    const lineTotal = cells[3].textContent.trim();
+                    itemsTable += `${product.padEnd(28)} | ${qty.padStart(7)} | ${unitPrice.padStart(11)} | ${lineTotal.padStart(11)}\n`;
+                });
+                
+                // Generate professional invoice
+                const invoiceText = `Order Invoice
+
+===============================================================================
+
+Order Number: ${orderId}
+Date & Time:  ${timestamp}
+
+===============================================================================
+
+ORDERED ITEMS
+
+${itemsTable}
+
+===============================================================================
+
+BILL SUMMARY
+
+Subtotal                                               ${subtotal}
+GST (18%)                                              ${gst}
+                                                       ${"-".repeat(20)}
+TOTAL AMOUNT                                           ${total}
+
+===============================================================================
+
+Status: Order confirmed and saved to database
+
+Thank you for your order!`;
+                
+                // Create blob and download
+                const blob = new Blob([invoiceText], { type: "text/plain" });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Invoice_${orderId.substring(0, 8)}_${new Date().toISOString().split("T")[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                console.log(" Invoice downloaded successfully");
+            } catch (error) {
+                console.error(" Download error:", error);
+                alert("Failed to download invoice: " + error.message);
+            }
+        }
+        
+        
+        // Event Handlers
+        
+        
+        micButton.addEventListener("click", () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+        
+        function resetForm() {
+            audioChunks = [];
+            isRecording = false;
+            recordingStatus.textContent = "Click to Start Recording";
+            recordingTimer.classList.add("hidden");
+            recordingIndicator.classList.add("hidden");
+            micButton.classList.add("bg-blue-500", "hover:bg-blue-600");
+            micButton.classList.remove("bg-red-500", "hover:bg-red-600");
+            hideAllCards();
+            emptyState.classList.remove("hidden");
+        }
+        
+        
+        // Initialization
+        
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log(" Hinglish Voice-to-Invoice System initialized");
+            console.log(` API Base URL: ${API_BASE_URL}`);
+            emptyState.classList.remove("hidden");
+        });
+        
+        // Handle page unload
+        window.addEventListener("beforeunload", () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+        
+    </script>
+    
+</body>
+</html>
