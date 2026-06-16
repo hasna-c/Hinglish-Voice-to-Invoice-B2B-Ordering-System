@@ -54,7 +54,7 @@ This system addresses the challenge of B2B ordering in India by accepting natura
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/Hinglish-Voice-Invoice.git
+git clone https://github.com/hasna-c/Hinglish-Voice-Invoice.git
 cd Hinglish-Voice-Invoice
 
 # 2. Create virtual environment
