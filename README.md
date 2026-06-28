@@ -306,7 +306,7 @@ Hinglish-Voice-Invoice/
   - English: ek, do, teen, char, paanch, chhah, saat, aath, nau, das
   - Devanagari: एक, दो, तीन, चार, पांच, छह, सात, आठ, नौ, दस
   - Numerals: 0-9 in both scripts
-- **Speech Error Handling:** "कर" → "चार", "की" → "दो"
+- **Speech Error Handling:** 
 
 ## Security Considerations
 
